@@ -18,18 +18,12 @@ source ~/.nodelist
 
 # Delete helm charts
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/ -n security
-kubectl delete -f k8s/elasticsearch.yaml -n security
-helm del --purge api-gateway
 helm del --purge keycloak
 
 # Delete persistent volumes of mongodb and elasticsearch
-helm del --purge security-mongodb-volumes
-helm del --purge security-es-volumes
 helm del --purge security-postgres-volumes
 
 # Delete created folders
-pssh -H "${JOIN_NODES[*]}" -t 600 -o logs -i rm -rf $PV_MONGODB_PATH
-pssh -H "${JOIN_NODES[*]}" -t 600 -o logs -i rm -rf $PV_ES_PATH
 pssh -H "${JOIN_NODES[*]}" -t 600 -o logs -i rm -rf $PV_POSTGRES_PATH
 
 
@@ -48,4 +42,4 @@ clean_hosts_file() {
 	done
 }
 
-clean_hosts_file gravitee gravitee-api gravitee-gateway gravitee-ui keycloak dashboard-service
+clean_hosts_file keycloak dashboard-service

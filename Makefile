@@ -14,10 +14,10 @@ help :
 	@echo "--------------------------------------------------------------------------------"
 
 install :
-	./bin/setup-api-gateway.sh
+	./bin/setup.sh
 clean :
 	./bin/cleanup.sh
 reinstall:
 	./bin/cleanup.sh
-	./bin/setup-api-gateway.sh
+	./bin/setup.sh
 	

@@ -8,7 +8,7 @@
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
-source ${0%/*}/config.sh
+#source ${0%/*}/config.sh
 source ~/.nodelist
 
 cd "${0%/*}/.."
