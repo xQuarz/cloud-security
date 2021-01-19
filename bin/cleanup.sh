@@ -8,8 +8,8 @@
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
-source ${0%/*}/config.sh
-source ~/.nodelist
+. ${0%/*}/config.sh
+. ~/.nodelist
 
 
 ##################################################
@@ -18,14 +18,7 @@ source ~/.nodelist
 
 # Delete helm charts
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/ -n security
-helm del --purge keycloak
-
-# Delete persistent volumes of mongodb and elasticsearch
-helm del --purge security-postgres-volumes
-
-# Delete created folders
-pssh -H "${JOIN_NODES[*]}" -t 600 -o logs -i rm -rf $PV_POSTGRES_PATH
-
+helm uninstall keycloak
 
 # Remove namespace security
 kubectl delete ns security

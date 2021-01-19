@@ -20,18 +20,19 @@ kubectl create ns $ns
 ####################################################
 
 # Install postgres
-sh bin/setup-pv-for-keycloak-postgres.sh
+#sh bin/setup-pv-for-keycloak-postgres.sh
 
-helm install --name keycloak --namespace $ns \
- -f k8s/keycloak-helm/values.yaml stable/keycloak
+helm repo add codecentric https://codecentric.github.io/helm-charts
+helm install keycloak codecentric/keycloak --namespace $ns \
+ --values k8s/keycloak-helm/values.yaml
 
 
 ####################################################
 # Install showcase
 ####################################################
 
-sed -i "s/traefik/nginx/g" k8s/cloud-native-javaee/kubernetes/dashboard-service-ingress.yaml
-kubectl apply -f k8s/cloud-native-javaee/kubernetes/ -n $ns
+#sed -i "s/traefik/nginx/g" k8s/cloud-native-javaee/kubernetes/dashboard-service-ingress.yaml
+#kubectl apply -f k8s/cloud-native-javaee/kubernetes/ -n $ns
 
 
 ####################################################
