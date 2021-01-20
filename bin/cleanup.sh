@@ -6,10 +6,9 @@
 #
 ##################################################
 
-export KUBECONFIG=/etc/kubernetes/admin.conf
+export KUBECONFIG=/home/quarz/.kube/config
 
 . ${0%/*}/config.sh
-. ~/.nodelist
 
 
 ##################################################
@@ -17,11 +16,41 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 ##################################################
 
 # Delete helm charts
-kubectl delete -f k8s/cloud-native-javaee/kubernetes/ -n security
-helm uninstall keycloak
+
+kubectl delete -f k8s/cloud-native-javaee/kubernetes/ -n $NAMESPACE
+
+while [ -n "$(helm list --namespace $NAMESPACE | grep $NGINX)" ]
+do
+	helm uninstall $NGINX
+
+	if [ $? == 0 ]
+	then
+		break
+	fi
+done
+
+while [ -n "$(helm list --namespace $NAMESPACE | grep $KEYCLOAK)" ]
+do
+	helm uninstall $KEYCLOAK
+
+	if [ $? == 0 ]
+	then
+		break
+	fi
+done
+
 
 # Remove namespace security
-kubectl delete ns security
+kubens | grep $NAMESPACE
+while [ -z "$?" ]
+do
+	kubectl delete ns $NAMESPACE
+
+	if [ $? == 0 ]
+	then
+		break
+	fi
+done
 
 
 ##################################################
@@ -35,4 +64,4 @@ clean_hosts_file() {
 	done
 }
 
-clean_hosts_file keycloak dashboard-service
+clean_hosts_file $KEYCLOAK $DASHBOARD

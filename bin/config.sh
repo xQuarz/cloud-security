@@ -9,7 +9,9 @@
 #
 ##################################################
 
-# Persistent volume settings for keycloak postgres
-PV_POSTGRES_PATH="/data/keycloak-postgres"
-PV_POSTGRES_SIZE="1Gi"
-PV_POSTGRES_VOLUMES_PER_NODE="3"
+# Namespace
+
+NAMESPACE="security"
+KEYCLOAK="keycloak"
+DASHBOARD="dashboard-service"
+NGINX="nginx"
