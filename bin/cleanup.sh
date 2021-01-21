@@ -69,6 +69,13 @@ then
 	helm uninstall $KEYCLOAK
 fi
 
+HELM_TYK=`helm list | grep $TYK`
+if [[ -n $HELM_TYK ]]
+then
+	helm uninstall redis
+	helm uninstall $TYK
+fi
+
 # Remove namespace security
 SEC_NS=`kubens | grep $NAMESPACE`
 if [[ -n $SEC_NS ]] 
@@ -77,15 +84,15 @@ then
 fi
 
 
-# ##################################################
-# # Clean /etc/hosts
-# ##################################################
+##################################################
+# Clean /etc/hosts
+##################################################
 
-# clean_hosts_file() {
-# 	for host in "$@"
-# 	do
-# 		sed -i "/127.0.0.1 $host.local/d" /etc/hosts
-# 	done
-# }
+clean_hosts_file() {
+	for host in "$@"
+	do
+		sed -i "/127.0.0.1 $host.local/d" /etc/hosts
+	done
+}
 
-# clean_hosts_file $KEYCLOAK $DASHBOARD
+clean_hosts_file $KEYCLOAK $DASHBOARD

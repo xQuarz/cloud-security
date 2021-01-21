@@ -40,6 +40,22 @@ fi
 
 
 ####################################################
+# Install tyk
+####################################################
+
+helm repo add bitnami https://charts.bitnami.com/bitnami --force-update
+helm repo update
+
+HELM_TYK=`helm list | grep $TYK`
+if [[ -z $HELM_TYK ]] 
+then
+	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
+	helm install $TYK -f k8s/tyk-helm-chart/values_community_edition.yaml \
+	 k8s/tyk-helm-chart/tyk-headless --wait
+fi
+
+
+####################################################
 # Install showcase
 ####################################################
 
@@ -86,17 +102,17 @@ kubectl apply -f k8s/cloud-native-javaee/kubernetes/process-service-service.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/process-service-configmap.yaml
 
 
-# ####################################################
-# # Modify /etc/hosts of master node
-# ####################################################
+####################################################
+# Modify /etc/hosts of master node
+####################################################
 
-# modify_hosts_file() {
-# 	# loop for all parameters
-# 	for host in "$@"
-# 	do
-# 		grep -q -F "127.0.0.1 $host.local" /etc/hosts || \
-# 		echo "127.0.0.1 $host.local" >> /etc/hosts
-# 	done
-# }
+modify_hosts_file() {
+	# loop for all parameters
+	for host in "$@"
+	do
+		grep -q -F "127.0.0.1 $host.local" /etc/hosts || \
+		echo "127.0.0.1 $host.local" >> /etc/hosts
+	done
+}
 
-# modify_hosts_file $KEYCLOAK $DASHBOARD
+modify_hosts_file $KEYCLOAK $DASHBOARD
