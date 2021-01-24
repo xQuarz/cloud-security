@@ -64,16 +64,6 @@ fi
 
 sed -i "s/traefik/nginx/g" k8s/cloud-native-javaee/kubernetes/dashboard-service-ingress.yaml
 
-# helm repo add nginx-stable https://helm.nginx.com/stable --force-update
-# helm repo update
-
-# HELM_NGINX=`helm list | grep $NGINX`
-# if [[ -z $HELM_NGINX ]] 
-# then
-# 	helm install $NGINX nginx-stable/nginx-ingress --wait \
-# 	 --set controller.hostNetwork=true,controller.service.type="",controller.kind=DaemonSet
-# fi
-
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-db-deployment.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-db-service.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-service-deployment.yaml
@@ -95,8 +85,8 @@ kubectl apply -f k8s/cloud-native-javaee/kubernetes/message-queue-service.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/payment-db-deployment.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/payment-db-service.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/payment-service-deployment.yaml
-kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-service-service.yaml
-kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-service-configmap.yaml
+kubectl apply -f k8s/cloud-native-javaee/kubernetes/payment-service-service.yaml
+kubectl apply -f k8s/cloud-native-javaee/kubernetes/payment-service-configmap.yaml
 
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/process-db-deployment.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/process-db-service.yaml

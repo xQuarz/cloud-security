@@ -47,8 +47,8 @@ kubectl delete -f k8s/cloud-native-javaee/kubernetes/message-queue-service.yaml
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/payment-db-deployment.yaml
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/payment-db-service.yaml
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/payment-service-deployment.yaml
-kubectl delete -f k8s/cloud-native-javaee/kubernetes/billing-service-service.yaml
-kubectl delete -f k8s/cloud-native-javaee/kubernetes/billing-service-configmap.yaml
+kubectl delete -f k8s/cloud-native-javaee/kubernetes/payment-service-service.yaml
+kubectl delete -f k8s/cloud-native-javaee/kubernetes/payment-service-configmap.yaml
 
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-db-deployment.yaml
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-db-service.yaml
@@ -56,12 +56,6 @@ kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-deployment.
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-service.yaml
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-configmap.yaml
 
-
-# HELM_NGINX=`helm list | grep $NGINX`
-# if [[ -n $HELM_NGINX ]]
-# then
-# 	helm uninstall $NGINX
-# fi
 
 HELM_KEYCLOAK=`helm list | grep $KEYCLOAK`
 if [[ -n $HELM_KEYCLOAK ]]
