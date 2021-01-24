@@ -31,6 +31,9 @@ kubectl config set-context --current --namespace=$NAMESPACE
 helm repo add codecentric https://codecentric.github.io/helm-charts --force-update
 helm repo update
 
+# Setup secret from realm config file to keycloak
+kubectl create secret generic realm-secret --from-file=k8s/keycloak-helm/realm-export.json
+
 HELM_KEYCLOAK=`helm list | grep $KEYCLOAK`
 if [[ -z $HELM_KEYCLOAK ]] 
 then
@@ -43,16 +46,16 @@ fi
 # Install tyk
 ####################################################
 
-helm repo add bitnami https://charts.bitnami.com/bitnami --force-update
-helm repo update
+# helm repo add bitnami https://charts.bitnami.com/bitnami --force-update
+# helm repo update
 
-HELM_TYK=`helm list | grep $TYK`
-if [[ -z $HELM_TYK ]] 
-then
-	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
-	helm install $TYK -f k8s/tyk-helm-chart/values_community_edition.yaml \
-	 k8s/tyk-helm-chart/tyk-headless --wait
-fi
+# HELM_TYK=`helm list | grep $TYK`
+# if [[ -z $HELM_TYK ]] 
+# then
+# 	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
+# 	helm install $TYK -f k8s/tyk-helm-chart/values_community_edition.yaml \
+# 	 k8s/tyk-helm-chart/tyk-headless --wait
+# fi
 
 
 ####################################################
@@ -61,15 +64,15 @@ fi
 
 sed -i "s/traefik/nginx/g" k8s/cloud-native-javaee/kubernetes/dashboard-service-ingress.yaml
 
-helm repo add nginx-stable https://helm.nginx.com/stable --force-update
-helm repo update
+# helm repo add nginx-stable https://helm.nginx.com/stable --force-update
+# helm repo update
 
-HELM_NGINX=`helm list | grep $NGINX`
-if [[ -z $HELM_NGINX ]] 
-then
-	helm install $NGINX nginx-stable/nginx-ingress --wait \
-	 --set controller.hostNetwork=true,controller.service.type="",controller.kind=DaemonSet
-fi
+# HELM_NGINX=`helm list | grep $NGINX`
+# if [[ -z $HELM_NGINX ]] 
+# then
+# 	helm install $NGINX nginx-stable/nginx-ingress --wait \
+# 	 --set controller.hostNetwork=true,controller.service.type="",controller.kind=DaemonSet
+# fi
 
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-db-deployment.yaml
 kubectl apply -f k8s/cloud-native-javaee/kubernetes/billing-db-service.yaml

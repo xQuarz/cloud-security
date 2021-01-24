@@ -161,7 +161,18 @@ keycloak:
 
   ## Add additional volumes and mounts, e. g. for custom themes
   extraVolumes: |
+    - name: realm-secret
+      secret:
+        secretName: realm-secret
+
   extraVolumeMounts: |
+    - name: realm-secret
+      mountPath: "/realm/"
+      readOnly: true
+
+  extraEnv: |
+    - name: KEYCLOAK_IMPORT
+      value: /realm/realm-export.json
 
   podDisruptionBudget: {}
     # maxUnavailable: 1
@@ -209,10 +220,10 @@ keycloak:
   ## Persistence configuration
   persistence:
     # If true, the Postgres chart is deployed
-    deployPostgres: true
+    deployPostgres: false
 
     # The database vendor. Can be either "postgres", "mysql", "mariadb", or "h2"
-    dbVendor: postgres
+    dbVendor: h2
 
     ## The following values only apply if "deployPostgres" is set to "false"
 

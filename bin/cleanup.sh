@@ -57,24 +57,25 @@ kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-service.yam
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-configmap.yaml
 
 
-HELM_NGINX=`helm list | grep $NGINX`
-if [[ -n $HELM_NGINX ]]
-then
-	helm uninstall $NGINX
-fi
+# HELM_NGINX=`helm list | grep $NGINX`
+# if [[ -n $HELM_NGINX ]]
+# then
+# 	helm uninstall $NGINX
+# fi
 
 HELM_KEYCLOAK=`helm list | grep $KEYCLOAK`
 if [[ -n $HELM_KEYCLOAK ]]
 then
 	helm uninstall $KEYCLOAK
+	kubectl delete secret realm-secret
 fi
 
-HELM_TYK=`helm list | grep $TYK`
-if [[ -n $HELM_TYK ]]
-then
-	helm uninstall redis
-	helm uninstall $TYK
-fi
+# HELM_TYK=`helm list | grep $TYK`
+# if [[ -n $HELM_TYK ]]
+# then
+# 	helm uninstall redis
+# 	helm uninstall $TYK
+# fi
 
 # Remove namespace security
 SEC_NS=`kubens | grep $NAMESPACE`
