@@ -20,10 +20,10 @@ imagePullSecrets: []
 # - name: myRegistrKeySecretName
 
 # Mapping between IPs and hostnames that will be injected as entries in the Pod's hosts files
-hostAliases: []
-# - ip: "1.2.3.4"
+# hostAliases: 
+# - ip: "34.91.102.234"
 #   hostnames:
-#     - "my.host.com"
+#     - "34.91.102.234.nip.io"
 
 # Indicates whether information about services should be injected into Pod's environment variables, matching the syntax of Docker links
 enableServiceLinks: true
