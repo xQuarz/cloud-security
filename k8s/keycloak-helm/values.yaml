@@ -1,272 +1,471 @@
-init:
-  image:
-    repository: alpine
-    tag: 3.7
-    pullPolicy: IfNotPresent
+# Optionally override the fully qualified name
+fullnameOverride: ""
 
-keycloak:
-  replicas: 1
+# Optionally override the name
+nameOverride: ""
 
-  image:
-    repository: jboss/keycloak
-    tag: 4.1.0.Final
-    pullPolicy: IfNotPresent
+# The number of replicas to create (has no effect if autoscaling enabled)
+replicas: 1
 
-    ## Optionally specify an array of imagePullSecrets.
-    ## Secrets must be manually created in the namespace.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-    ##
-    pullSecrets: []
-    #  - myRegistrKeySecretName
+image:
+  # The Keycloak image repository
+  repository: docker.io/jboss/keycloak
+  # Overrides the Keycloak image tag whose default is the chart version
+  tag: ""
+  # The Keycloak image pull policy
+  pullPolicy: IfNotPresent
 
-  securityContext:
-    runAsUser: 1000
-    fsGroup: 1000
-    runAsNonRoot: true
+# Image pull secrets for the Pod
+imagePullSecrets: []
+# - name: myRegistrKeySecretName
 
-  ## Additional init containers, e. g. for providing custom themes
-  extraInitContainers: |
+# Mapping between IPs and hostnames that will be injected as entries in the Pod's hosts files
+hostAliases: []
+# - ip: "1.2.3.4"
+#   hostnames:
+#     - "my.host.com"
 
-  ## Additional sidecar containers, e. g. for a database proxy, such as Google's cloudsql-proxy
-  extraContainers: |
+# Indicates whether information about services should be injected into Pod's environment variables, matching the syntax of Docker links
+enableServiceLinks: true
 
-  ## Custom script that is run before Keycloak is started.
-  preStartScript:
+# Pod management policy. One of `Parallel` or `OrderedReady`
+podManagementPolicy: Parallel
 
-  ## Additional arguments to start command e.g. -Dkeycloak.import= to load a realm
-  extraArgs: ""
+# Pod restart policy. One of `Always`, `OnFailure`, or `Never`
+restartPolicy: Always
 
-  ## Username for the initial Keycloak admin user
-  username: keycloak
+serviceAccount:
+  # Specifies whether a ServiceAccount should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # Additional annotations for the ServiceAccount
+  annotations: {}
+  # Additional labels for the ServiceAccount
+  labels: {}
+  # Image pull secrets that are attached to the ServiceAccount
+  imagePullSecrets: []
 
-  ## Password for the initial Keycloak admin user
-  ## If not set, a random 10 characters password will be used
-  password: ""
+rbac:
+  create: false
+  rules: []
+  # RBAC rules for KUBE_PING
+  #  - apiGroups:
+  #      - ""
+  #    resources:
+  #      - pods
+  #    verbs:
+  #      - get
+  #      - list
 
-  ## Allows the specification of additional environment variables for Keycloak
-  extraEnv: |
-    # - name: KEYCLOAK_LOGLEVEL
-    #   value: DEBUG
-    # - name: WILDFLY_LOGLEVEL
-    #   value: DEBUG
-    # - name: CACHE_OWNERS
-    #   value: "2"
+# SecurityContext for the entire Pod. Every container running in the Pod will inherit this SecurityContext. This might be relevant when other components of the environment inject additional containers into running Pods (service meshes are the most prominent example for this)
+podSecurityContext:
+  fsGroup: 1000
 
-  affinity: |
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
+# SecurityContext for the Keycloak container
+securityContext:
+  runAsUser: 1000
+  runAsNonRoot: true
+
+# Additional init containers, e. g. for providing custom themes
+extraInitContainers: ""
+
+# Additional sidecar containers, e. g. for a database proxy, such as Google's cloudsql-proxy
+extraContainers: ""
+
+# Lifecycle hooks for the Keycloak container
+lifecycleHooks: |
+#  postStart:
+#    exec:
+#      command:
+#        - /bin/sh
+#        - -c
+#        - ls
+
+# Termination grace period in seconds for Keycloak shutdown. Clusters with a large cache might need to extend this to give Infinispan more time to rebalance
+terminationGracePeriodSeconds: 60
+
+# The internal Kubernetes cluster domain
+clusterDomain: cluster.local
+
+## Overrides the default entrypoint of the Keycloak container
+command: []
+
+## Overrides the default args for the Keycloak container
+args: []
+
+# Additional environment variables for Keycloak
+extraEnv: |
+    - name: PROXY_ADDRESS_FORWARDING
+      value: "true"
+    - name: KEYCLOAK_IMPORT
+      value: /realm/realm-export.json
+  # - name: KEYCLOAK_LOGLEVEL
+  #   value: DEBUG
+  # - name: WILDFLY_LOGLEVEL
+  #   value: DEBUG
+  # - name: CACHE_OWNERS_COUNT
+  #   value: "2"
+  # - name: CACHE_OWNERS_AUTH_SESSIONS_COUNT
+  #   value: "2"
+
+# Additional environment variables for Keycloak mapped from Secret or ConfigMap
+extraEnvFrom: ""
+
+#  Pod priority class name
+priorityClassName: ""
+
+# Pod affinity
+affinity: |
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            {{- include "keycloak.selectorLabels" . | nindent 10 }}
+          matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: NotIn
+              values:
+                - test
+        topologyKey: kubernetes.io/hostname
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
             matchLabels:
-              app:  {{ template "keycloak.name" . }}
-              release: "{{ .Release.Name }}"
+              {{- include "keycloak.selectorLabels" . | nindent 12 }}
             matchExpressions:
-              - key: role
+              - key: app.kubernetes.io/component
                 operator: NotIn
                 values:
                   - test
-          topologyKey: kubernetes.io/hostname
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                app:  {{ template "keycloak.name" . }}
-                release: "{{ .Release.Name }}"
-              matchExpressions:
-                - key: role
-                  operator: NotIn
-                  values:
-                    - test
-            topologyKey: failure-domain.beta.kubernetes.io/zone
+          topologyKey: failure-domain.beta.kubernetes.io/zone
+# Node labels for Pod assignment
+nodeSelector: {}
 
-  nodeSelector: {}
-  tolerations: []
+# Node taints to tolerate
+tolerations: []
 
-  livenessProbe:
-    initialDelaySeconds: 120
-    timeoutSeconds: 5
-  readinessProbe:
-    initialDelaySeconds: 30
-    timeoutSeconds: 1
+# Additional Pod labels
+podLabels: {}
 
-  resources: {}
-    # limits:
-    #   cpu: "100m"
-    #   memory: "1024Mi"
-    # requests:
-    #   cpu: "100m"
-    #   memory: "1024Mi"
+# Additional Pod annotations
+podAnnotations: {}
 
-  ## WildFly CLI configurations. They all end up in the file 'keycloak.cli' configured in the configmap whichn is
-  ## executed on server startup.
-  cli:
-    ## Sets the node identifier to the node name (= pod name). Node identifiers have to be unique. They can have a
-    ## maximum length of 23 characters. Thus, the chart's fullname template truncates its length accordingly.
-    nodeIdentifier: |
-      # Makes node identifier unique getting rid of a warning in the logs
-      /subsystem=transactions:write-attribute(name=node-identifier, value=${jboss.node.name})
+# Liveness probe configuration
+livenessProbe: |
+  httpGet:
+    path: /auth/
+    port: http
+  initialDelaySeconds: 300
+  timeoutSeconds: 5
+# Readiness probe configuration
+readinessProbe: |
+  httpGet:
+    path: /auth/realms/master
+    port: http
+  initialDelaySeconds: 30
+  timeoutSeconds: 1
+# Pod resource requests and limits
+resources: {}
+  # requests:
+  #   cpu: "500m"
+  #   memory: "1024Mi"
+  # limits:
+  #   cpu: "500m"
+  #   memory: "1024Mi"
 
-    logging: |
-      # Allow log level to be configured via environment variable
-      /subsystem=logging/console-handler=CONSOLE:write-attribute(name=level, value=${env.WILDFLY_LOGLEVEL:INFO})
-      /subsystem=logging/root-logger=ROOT:write-attribute(name=level, value=${env.WILDFLY_LOGLEVEL:INFO})
+# Startup scripts to run before Keycloak starts up
+startupScripts:
+  # WildFly CLI script for configuring the node-identifier
+  keycloak.cli: |
+    {{- .Files.Get "scripts/keycloak.cli" }}
+  # mystartup.sh: |
+  #   #!/bin/sh
+  #
+  # echo 'Hello from my custom startup script!'
 
-      # Log only to console
-      /subsystem=logging/root-logger=ROOT:write-attribute(name=handlers, value=[CONSOLE])
+# Add additional volumes, e. g. for custom themes
+extraVolumes: |
+  - name: realm-secret
+    secret:
+      secretName: realm-secret
 
-    reverseProxy: |
-      /socket-binding-group=standard-sockets/socket-binding=proxy-https:add(port=443)
-      /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=redirect-socket, value=proxy-https)
-      /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=proxy-address-forwarding, value=true)
+# Add additional volumes mounts, e. g. for custom themes
+extraVolumeMounts: |
+  - name: realm-secret
+    mountPath: "/realm/"
+    readOnly: true
 
-    discovery: |
-      /subsystem=infinispan/cache-container=keycloak/distributed-cache=sessions:write-attribute(name=owners, value=${env.CACHE_OWNERS:2})
-      /subsystem=infinispan/cache-container=keycloak/distributed-cache=authenticationSessions:write-attribute(name=owners, value=${env.CACHE_OWNERS:2})
-      /subsystem=infinispan/cache-container=keycloak/distributed-cache=offlineSessions:write-attribute(name=owners, value=${env.CACHE_OWNERS:2})
-      /subsystem=infinispan/cache-container=keycloak/distributed-cache=loginFailures:write-attribute(name=owners, value=${env.CACHE_OWNERS:2})
+# Add additional ports, e. g. for admin console or exposing JGroups ports
+extraPorts: []
 
-      /subsystem=jgroups/stack=tcp:remove()
-      /subsystem=jgroups/stack=tcp:add()
-      /subsystem=jgroups/stack=tcp/transport=TCP:add(socket-binding="jgroups-tcp")
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING:add()
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING/property=datasource_jndi_name:add(value=java:jboss/datasources/KeycloakDS)
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING/property=clear_table_on_view_change:add(value=true)
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING/property=break_on_coord_rsp:add(value=true)
+# Pod disruption budget
+podDisruptionBudget: {}
+#  maxUnavailable: 1
+#  minAvailable: 1
 
-      /subsystem=jgroups/stack=tcp/protocol=MERGE3:add()
-      /subsystem=jgroups/stack=tcp/protocol=FD_SOCK:add(socket-binding="jgroups-tcp-fd")
-      /subsystem=jgroups/stack=tcp/protocol=FD:add()
-      /subsystem=jgroups/stack=tcp/protocol=VERIFY_SUSPECT:add()
-      /subsystem=jgroups/stack=tcp/protocol=pbcast.NAKACK2:add()
-      /subsystem=jgroups/stack=tcp/protocol=UNICAST3:add()
-      /subsystem=jgroups/stack=tcp/protocol=pbcast.STABLE:add()
-      /subsystem=jgroups/stack=tcp/protocol=pbcast.GMS:add()
-      /subsystem=jgroups/stack=tcp/protocol=pbcast.GMS/property=max_join_attempts:add(value=5)
-      /subsystem=jgroups/stack=tcp/protocol=MFC:add()
-      /subsystem=jgroups/stack=tcp/protocol=FRAG2:add()
+# Annotations for the StatefulSet
+statefulsetAnnotations: {}
 
-      /subsystem=jgroups/channel=ee:write-attribute(name=stack, value=tcp)
-      /subsystem=jgroups/stack=udp:remove()
-      /socket-binding-group=standard-sockets/socket-binding=jgroups-mping:remove()
-      /interface=private:write-attribute(name=nic, value=eth0)
-      /interface=private:undefine-attribute(name=inet-address)
+# Additional labels for the StatefulSet
+statefulsetLabels: {}
 
-    postgresql: |
-      # Statements must be adapted for PostgreSQL. Additionally, we add a 'creation_timestamp' column.
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING/property=initialize_sql:add(value="CREATE TABLE IF NOT EXISTS JGROUPSPING (own_addr varchar(200) NOT NULL, creation_timestamp timestamp NOT NULL, cluster_name varchar(200) NOT NULL, ping_data bytea, constraint PK_JGROUPSPING PRIMARY KEY (own_addr, cluster_name))")
-      /subsystem=jgroups/stack=tcp/protocol=JDBC_PING/property=insert_single_sql:add(value="INSERT INTO JGROUPSPING (own_addr, creation_timestamp, cluster_name, ping_data) values (?, NOW(), ?, ?)")
+# Configuration for secrets that should be created
+secrets: {}
+  # mysecret:
+  #   annotations: {}
+  #   labels: {}
+  #   stringData: {}
+  #   data: {}
 
-    # Custom CLI script
-    custom: ""
+service:
+  # Annotations for headless and HTTP Services
+  annotations: {}
+  # Additional labels for headless and HTTP Services
+  labels: {}
+  # key: value
+  # The Service type
+  type: ClusterIP
+  # Optional IP for the load balancer. Used for services of type LoadBalancer only
+  loadBalancerIP: ""
+  # The http Service port
+  httpPort: 80
+  # The HTTP Service node port if type is NodePort
+  httpNodePort: null
+  # The HTTPS Service port
+  httpsPort: 8443
+  # The HTTPS Service node port if type is NodePort
+  httpsNodePort: null
+  # The WildFly management Service port
+  httpManagementPort: 9990
+  # The WildFly management Service node port if type is NodePort
+  httpManagementNodePort: null
+  # Additional Service ports, e. g. for custom admin console
+  extraPorts: []
+  # When using Service type LoadBalancer, you can restrict source ranges allowed
+  # to connect to the LoadBalancer, e. g. will result in Security Groups
+  # (or equivalent) with inbound source ranges allowed to connect
+  loadBalancerSourceRanges: []
+  # Session affinity
+  # See https://kubernetes.io/docs/concepts/services-networking/service/#proxy-mode-userspace
+  sessionAffinity: ""
+  # Session affinity config
+  sessionAffinityConfig: {}
 
-  ## Add additional volumes and mounts, e. g. for custom themes
-  extraVolumes: |
-    - name: realm-secret
-      secret:
-        secretName: realm-secret
+ingress:
+  # If `true`, an Ingress is created
+  enabled: true
+  # The Service port targeted by the Ingress
+  servicePort: http
+  # Ingress annotations
+  ## Resolve HTTP 502 error using ingress-nginx:
+    ## See https://www.ibm.com/support/pages/502-error-ingress-keycloak-response
+  annotations: {    
+    kubernetes.io/ingress.class: nginx,
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+  }
 
-  extraVolumeMounts: |
-    - name: realm-secret
-      mountPath: "/realm/"
-      readOnly: true
+  # Additional Ingress labels
+  labels: {}
+   # List of rules for the Ingress
+  rules:
+    -
+      # Ingress host
+      #host: '{{ .Release.Name }}.keycloak.example.com'
+      host: 'keycloak.local'
+      # Paths for the host
+      paths:
+        - /
+  # TLS configuration
+  tls:
+    - hosts:
+        - keycloak.local
+      secretName: ""
 
-  extraEnv: |
-    - name: KEYCLOAK_IMPORT
-      value: /realm/realm-export.json
+## Network policy configuration
+networkPolicy:
+  # If true, the Network policies are deployed
+  enabled: false
 
-  podDisruptionBudget: {}
-    # maxUnavailable: 1
-    # minAvailable: 1
+  # Additional Network policy labels
+  labels: {}
 
-  service:
-    annotations: {}
-    # service.beta.kubernetes.io/aws-load-balancer-internal: "0.0.0.0/0"
+  # Define all other external allowed source
+  # See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#networkpolicypeer-v1-networking-k8s-io
+  extraFrom: []
 
-    labels: {}
-    # key: value
-
-    ## ServiceType
-    ## ref: https://kubernetes.io/docs/user-guide/services/#publishing-services---service-types
-    type: ClusterIP
-
-    ## Optional static port assignment for service type NodePort.
-    # nodePort: 30000
-
-    port: 80
-
-  ## Ingress configuration.
-  ## ref: https://kubernetes.io/docs/user-guide/ingress/
-  ingress:
+route:
+  # If `true`, an OpenShift Route is created
+  enabled: false
+  # Path for the Route
+  path: /
+  # Route annotations
+  annotations: {}
+  # Additional Route labels
+  labels: {}
+  # Host name for the Route
+  host: ""
+  # TLS configuration
+  tls:
+    # If `true`, TLS is enabled for the Route
     enabled: true
-    path: /
+    # Insecure edge termination policy of the Route. Can be `None`, `Redirect`, or `Allow`
+    insecureEdgeTerminationPolicy: Redirect
+    # TLS termination of the route. Can be `edge`, `passthrough`, or `reencrypt`
+    termination: edge
 
-    annotations: {
-        kubernetes.io/ingress.class: nginx
-    }
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-      # ingress.kubernetes.io/affinity: cookie
+# pgchecker:
+#   image:
+#     # Docker image used to check Postgresql readiness at startup
+#     repository: docker.io/busybox
+#     # Image tag for the pgchecker image
+#     tag: 1.32
+#     # Image pull policy for the pgchecker image
+#     pullPolicy: IfNotPresent
+#   # SecurityContext for the pgchecker container
+#   securityContext:
+#     allowPrivilegeEscalation: false
+#     runAsUser: 1000
+#     runAsGroup: 1000
+#     runAsNonRoot: true
+#   # Resource requests and limits for the pgchecker container
+#   resources:
+#     requests:
+#       cpu: "10m"
+#       memory: "16Mi"
+#     limits:
+#       cpu: "10m"
+#       memory: "16Mi"
 
-    ## List of hosts for the ingress
-    hosts:
-      - keycloak.local
+postgresql:
+  # If `true`, the Postgresql dependency is enabled
+  enabled: false
+  # PostgreSQL User to create
+  postgresqlUsername: keycloak
+  # PostgreSQL Password for the new user
+  postgresqlPassword: keycloak
+  # PostgreSQL Database to create
+  postgresqlDatabase: keycloak
+  # Persistent Volume Storage configuration
 
-    ## TLS configuration
-    tls: []
-    # - hosts:
-    #     - keycloak.example.com
-    #   secretName: tls-keycloak
+  # PostgreSQL network policy configuration
+  networkPolicy:
+    enabled: false
 
-  ## Persistence configuration
-  persistence:
-    # If true, the Postgres chart is deployed
-    deployPostgres: false
+serviceMonitor:
+  # If `true`, a ServiceMonitor resource for the prometheus-operator is created
+  enabled: false
+  # Optionally sets a target namespace in which to deploy the ServiceMonitor resource
+  namespace: ""
+  # Optionally sets a namespace for the ServiceMonitor
+  namespaceSelector: {}
+  # Annotations for the ServiceMonitor
+  annotations: {}
+  # Additional labels for the ServiceMonitor
+  labels: {}
+  # Interval at which Prometheus scrapes metrics
+  interval: 10s
+  # Timeout for scraping
+  scrapeTimeout: 10s
+  # The path at which metrics are served
+  path: /metrics
+  # The Service port at which metrics are served
+  port: http-management
 
-    # The database vendor. Can be either "postgres", "mysql", "mariadb", or "h2"
-    dbVendor: h2
+extraServiceMonitor:
+  # If `true`, a ServiceMonitor resource for the prometheus-operator is created
+  enabled: false
+  # Optionally sets a target namespace in which to deploy the ServiceMonitor resource
+  namespace: ""
+  # Optionally sets a namespace for the ServiceMonitor
+  namespaceSelector: {}
+  # Annotations for the ServiceMonitor
+  annotations: {}
+  # Additional labels for the ServiceMonitor
+  labels: {}
+  # Interval at which Prometheus scrapes metrics
+  interval: 10s
+  # Timeout for scraping
+  scrapeTimeout: 10s
+  # The path at which metrics are served
+  path: /auth/realms/master/metrics
+  # The Service port at which metrics are served
+  port: http
 
-    ## The following values only apply if "deployPostgres" is set to "false"
+prometheusRule:
+  # If `true`, a PrometheusRule resource for the prometheus-operator is created
+  enabled: false
+  # Annotations for the PrometheusRule
+  annotations: {}
+  # Additional labels for the PrometheusRule
+  labels: {}
+  # List of rules for Prometheus
+  rules: []
+  # - alert: keycloak-IngressHigh5xxRate
+  #   annotations:
+  #     message: The percentage of 5xx errors for keycloak over the last 5 minutes is over 1%.
+  #   expr: |
+  #     (
+  #       sum(
+  #         rate(
+  #           nginx_ingress_controller_response_duration_seconds_count{exported_namespace="mynamespace",ingress="mynamespace-keycloak",status=~"5[0-9]{2}"}[1m]
+  #         )
+  #       )
+  #       /
+  #       sum(
+  #         rate(
+  #           nginx_ingress_controller_response_duration_seconds_count{exported_namespace="mynamespace",ingress="mynamespace-keycloak"}[1m]
+  #         )
+  #       )
+  #     ) * 100 > 1
+  #   for: 5m
+  #   labels:
+  #     severity: warning
 
-    # Specifies an existing secret to be used for the database password
-    existingSecret: ""
-
-    # The key in the existing secret that stores the password
-    existingSecretKey: password
-
-    dbName: keycloak
-    dbHost: mykeycloak
-    dbPort: 5432
-    dbUser: keycloak
-
-    # Only used if no existing secret is specified. In this case a new secret is created
-    dbPassword: ""
-
-# postgresql:
-#   ### PostgreSQL User to create.
-#   ##
-#   postgresUser: keycloak
-
-#   ## PostgreSQL Password for the new user.
-#   ## If not set, a random 10 characters password will be used.
-#   ##
-#   postgresPassword: ""
-
-#   ## PostgreSQL Database to create.
-#   ##
-#   postgresDatabase: keycloakDB
-
-#   ## Persistent Volume Storage configuration.
-#   ## ref: https://kubernetes.io/docs/user-guide/persistent-volumes
-#   ##
-#   persistence:
-#     ## Enable PostgreSQL persistence using Persistent Volume Claims.
-#     ##
-#     enabled: true
-#     storageClass: security-postgres-data
-#     size: 1Gi
+autoscaling:
+  # If `true`, a autoscaling/v2beta2 HorizontalPodAutoscaler resource is created (requires Kubernetes 1.18 or above)
+  # Autoscaling seems to be most reliable when using KUBE_PING service discovery (see README for details)
+  # This disables the `replicas` field in the StatefulSet
+  enabled: false
+  # Additional HorizontalPodAutoscaler labels
+  labels: {}
+  # The minimum and maximum number of replicas for the Keycloak StatefulSet
+  minReplicas: 3
+  maxReplicas: 10
+  # The metrics to use for scaling
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+  # The scaling policy to use. This will scale up quickly but only scale down a single Pod per 5 minutes.
+  # This is important because caches are usually only replicated to 2 Pods and if one of those Pods is terminated this will give the cluster time to recover.
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300
 
 test:
+  # If `true`, test resources are created
+  enabled: false
   image:
-    repository: unguiculus/docker-python3-phantomjs-selenium
+    # The image for the test Pod
+    repository: docker.io/unguiculus/docker-python3-phantomjs-selenium
+    # The tag for the test Pod image
     tag: v1
+    # The image pull policy for the test Pod image
     pullPolicy: IfNotPresent
+  # SecurityContext for the entire test Pod
+  podSecurityContext:
+    fsGroup: 1000
+  # SecurityContext for the test container
+  securityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
