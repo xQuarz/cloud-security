@@ -8,7 +8,7 @@
 
 set -e
 
-GKE=`gcloud container clusters list | grep ma`
+GKE=`gcloud container clusters list | grep ma || : `
 if [[ -n $GKE ]]
 then
 	gcloud container clusters delete ma --quiet
