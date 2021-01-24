@@ -12,7 +12,7 @@ export KUBECONFIG=/home/quarz/.kube/config
 
 . ${0%/*}/config.sh
 
-SEC_NS=`kubens | grep $NAMESPACE`
+SEC_NS=`kubens | grep $NAMESPACE || : `
 if [[ -z $SEC_NS ]] 
 then
 	exit 0
@@ -57,14 +57,20 @@ kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-service.yam
 kubectl delete -f k8s/cloud-native-javaee/kubernetes/process-service-configmap.yaml
 
 
-HELM_KEYCLOAK=`helm list | grep $KEYCLOAK`
+HELM_KEYCLOAK=`helm list | grep $KEYCLOAK || : `
 if [[ -n $HELM_KEYCLOAK ]]
 then
 	helm uninstall $KEYCLOAK
 	kubectl delete secret realm-secret
 fi
 
-# HELM_TYK=`helm list | grep $TYK`
+REALM_CONFIG=`kubectl get secrets | grep realm-secret || : `
+if [[ -n $REALM_CONFIG ]]
+then
+	kubectl create secret generic realm-secret --from-file=k8s/keycloak-helm/realm-export.json
+fi
+
+# HELM_TYK=`helm list | grep $TYK || : `
 # if [[ -n $HELM_TYK ]]
 # then
 # 	helm uninstall redis
@@ -72,7 +78,7 @@ fi
 # fi
 
 # Remove namespace security
-SEC_NS=`kubens | grep $NAMESPACE`
+SEC_NS=`kubens | grep $NAMESPACE || : `
 if [[ -n $SEC_NS ]] 
 then
 	kubectl delete ns $NAMESPACE

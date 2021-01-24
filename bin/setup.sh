@@ -15,7 +15,7 @@ cd "${0%/*}/.."
 . ${0%/*}/config.sh
 
 # namespace for showcase
-SEC_NS=`kubens | grep $NAMESPACE`
+SEC_NS=`kubens | grep $NAMESPACE || : `
 if [[ -z $SEC_NS ]] 
 then
 	kubectl create ns $NAMESPACE
@@ -32,13 +32,16 @@ helm repo add codecentric https://codecentric.github.io/helm-charts --force-upda
 helm repo update
 
 # Setup secret from realm config file to keycloak
-kubectl create secret generic realm-secret --from-file=k8s/keycloak-helm/realm-export.json
+REALM_CONFIG=`kubectl get secrets | grep realm-secret || : `
+if [[ -z $REALM_CONFIG ]]
+then
+	kubectl create secret generic realm-secret --from-file=k8s/keycloak-helm/realm-export.json
+fi
 
-HELM_KEYCLOAK=`helm list | grep $KEYCLOAK`
+HELM_KEYCLOAK=`helm list | grep $KEYCLOAK || : `
 if [[ -z $HELM_KEYCLOAK ]] 
 then
-	helm install $KEYCLOAK codecentric/$KEYCLOAK \
- 	 --values k8s/keycloak-helm/values.yaml --wait
+	helm install $KEYCLOAK codecentric/$KEYCLOAK --values k8s/keycloak-helm/values.yaml --wait
 fi
 
 
@@ -49,7 +52,7 @@ fi
 # helm repo add bitnami https://charts.bitnami.com/bitnami --force-update
 # helm repo update
 
-# HELM_TYK=`helm list | grep $TYK`
+# HELM_TYK=`helm list | grep $TYK || : `
 # if [[ -z $HELM_TYK ]] 
 # then
 # 	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
