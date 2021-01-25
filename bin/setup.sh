@@ -52,10 +52,16 @@ fi
 helm repo add bitnami https://charts.bitnami.com/bitnami --force-update
 helm repo update
 
+HELM_REDIS=`helm list | grep redis || : `
+if [[ -z $HELM_REDIS ]]
+then
+	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
+fi
+
 HELM_TYK=`helm list | grep $TYK || : `
 if [[ -z $HELM_TYK ]] 
 then
-	helm install redis bitnami/redis --set "global.redis.password=tyk" --wait
+	
 	helm install $TYK -f k8s/tyk-helm-chart/values_community_edition.yaml \
 	 k8s/tyk-helm-chart/tyk-headless --wait
 fi

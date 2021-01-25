@@ -70,12 +70,18 @@ then
 	kubectl create secret generic realm-secret --from-file=k8s/keycloak-helm/realm-export.json
 fi
 
-# HELM_TYK=`helm list | grep $TYK || : `
-# if [[ -n $HELM_TYK ]]
-# then
-# 	helm uninstall redis
-# 	helm uninstall $TYK
-# fi
+HELM_REDIS=`helm list | grep redis || : `
+if [[ -z $HELM_REDIS ]]
+then
+	helm uninstall redis
+fi
+
+HELM_TYK=`helm list | grep $TYK || : `
+if [[ -n $HELM_TYK ]]
+then
+	
+	helm uninstall $TYK
+fi
 
 # Remove namespace security
 SEC_NS=`kubens | grep $NAMESPACE || : `
