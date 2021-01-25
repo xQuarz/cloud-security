@@ -71,7 +71,7 @@ then
 fi
 
 HELM_REDIS=`helm list | grep redis || : `
-if [[ -z $HELM_REDIS ]]
+if [[ -n $HELM_REDIS ]]
 then
 	helm uninstall redis
 fi
